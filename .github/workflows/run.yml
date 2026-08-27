@@ -21,29 +21,39 @@ jobs:
     - name: Install dependencies
       run: npm install
 
-    - name: Run main.js
+    - name: Run script and Notify Discord
       env:
         MYS_COOKIES: ${{ secrets.MYS_COOKIES }}
         GENSHIN_TOKENS: ${{ secrets.GENSHIN_TOKENS }}
         STARRAIL_TOKENS: ${{ secrets.STARRAIL_TOKENS }}
-      run: node main.js
-
-    - name: Discord Notification (Success)
-      if: success()
-      env:
         DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
       run: |
+        # 1. 執行腳本並將輸出存入 log.txt
+        node main.js > log.txt 2>&1
+        
+        # 2. 在 GitHub Actions 介面顯示日誌
+        cat log.txt
+        
+        # 3. 取得當前時間 (UTC+8)
         CURRENT_TIME=$(TZ='Asia/Hong_Kong' date '+%Y-%m-%d %H:%M:%S')
-        curl -H "Content-Type: application/json" \
-        -d "{\"content\": \"<@lazycat7179> ✅ MYS_Game_Singin \n**Status**: Success\n**Time**: $CURRENT_TIME\nCheck GitHub Actions logs for details.\"}" \
-        $DISCORD_WEBHOOK
-
-    - name: Discord Notification (Failure)
-      if: failure()
-      env:
-        DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-      run: |
-        CURRENT_TIME=$(TZ='Asia/Hong_Kong' date '+%Y-%m-%d %H:%M:%S')
-        curl -H "Content-Type: application/json" \
-        -d "{\"content\": \"<@lazycat7179> ❌ MYS_Game_Singin \n**Status**: Failure (Crash/Error)\n**Time**: $CURRENT_TIME\nPlease check GitHub Actions logs.\"}" \
-        $DISCORD_WEBHOOK
+        
+        # 4. 判斷日誌中是否包含失敗或失效的關鍵字
+        if grep -q -E "失效|failed|not logged in|-100" log.txt; then
+          STATUS="❌ 失敗 (請檢查 Cookie 狀態)"
+        else
+          STATUS="✅ 成功"
+        fi
+        
+        # 5. 擷取日誌內容 (限制 1500 字元避免超出 Discord 限制)
+        LOG_TEXT=$(head -c 1500 log.txt)
+        
+        # 6. 使用 jq 封裝 JSON，避免日誌中的雙引號破壞 JSON 結構
+        jq -n \
+          --arg msg "<@lazycat7179> MYS_Game_Singin" \
+          --arg status "$STATUS" \
+          --arg time "$CURRENT_TIME" \
+          --arg logs "$LOG_TEXT" \
+          '{content: ($msg + "\n**狀態**: " + $status + "\n**時間**: " + $time + "\n**詳細日誌**:\n```text\n" + $logs + "\n```")}' > payload.json
+          
+        # 7. 透過 Webhook 傳送至 Discord
+        curl -H "Content-Type: application/json" -d @payload.json $DISCORD_WEBHOOK
