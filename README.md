@@ -11,13 +11,13 @@
 利用 `grep` 指令分析 `genshin.log` 內的關鍵字，判斷實際簽到狀態，並賦予對應的 Embed 邊框顏色與標記 (Tag) 條件：
 * **Already Signed In (重複簽到)**: 偵測 `已签到`, `already`, `-5003`。顏色設為黃色 (16776960)，不觸發標記。
 * **Login Status Lost (Cookie 失效)**: 偵測 `失效`, `not logged in`, `-100`。顏色設為紅色 (16711680)，觸發標記。
-* **Sign-in Successful (簽到成功)**: 偵測 `OK`, `Sign-in successful`, `success`。顏色設為藍色 (5793266)，不觸發標記。
+* **Sign-in Successful (簽到成功)**: 偵測 `OK`, `Sign-in successful`, `success`。顏色設為藍色 (5793266)，觸發標記。
 * **Unknown Status (未知狀態)**: 若皆不符合上述條件，顏色設為灰色 (8421504)，並觸發標記。
 
 ### 4. Discord Webhook Integration (Embed Format)
 * 引入 `DISCORD_WEBHOOK` 與 `DISCORD_USER_ID` 變數。
 * 使用 `jq` 工具動態生成 JSON 格式的 Payload。
-* 將發送者名稱 (`username`) 自訂為 `原神小幫手`。
+* 將發送者名稱 (`username`) 自訂為 `簽到小幫手`。
 * 捨棄純文字通知，改採 Embed 格式美化排版，並將 `genshin.log` 的原始日誌字串，以 Markdown 程式碼區塊 (````text`) 的形式，附加於 Embed 的 `description` 欄位底部。
 * 透過 `curl` 攜帶 JSON 檔案發送 POST 請求至 Discord。
 
@@ -26,7 +26,8 @@
 * `DISCORD_WEBHOOK`: 存放於 GitHub Secrets 的 Discord 頻道 Webhook URL。
 * `DISCORD_USER_ID`: 接收失敗/異常通知標記的 Discord 使用者 ID (目前以環境變數形式寫死於 YAML 中)。
 
-* 
+
+# 以下原Project
 
 # 米游社、米家云游戏签到脚本 (Node.js 版) - 支持多账号 (崩铁 & 原神)
 
