@@ -31,31 +31,43 @@ jobs:
       run: |
         node main.js > log.txt 2>&1
         
+        # Extract Genshin logs
         awk '/\[Genshin\] Start/,/\[Genshin\] Sign-in completed/' log.txt > genshin.log
-        
-        CURRENT_TIME=$(TZ='Asia/Hong_Kong' date '+%Y-%m-%d %H:%M:%S')
-        
-        if grep -q -E "已签到|already|-5003" genshin.log; then
-          STATUS="⚠️ Already Signed In"
-          TAG=""
-        elif grep -q -E "失效|not logged in|-100" genshin.log; then
-          STATUS="❌ Login Status Lost (Cookie Expired)"
-          TAG="<@${DISCORD_USER_ID}> "
-        elif grep -q -E "OK|Sign-in successful|success" genshin.log; then
-          STATUS="✅ Sign-in Successful"
-          TAG=""
-        else
-          STATUS="❓ Unknown Status"
-          TAG="<@${DISCORD_USER_ID}> "
-        fi
-        
         LOG_TEXT=$(cat genshin.log)
         
+        # Determine status, embed color, and mention tag
+        if grep -q -E "已签到|already|-5003" genshin.log; then
+          DESC="[自動簽到] 原神今日已完成簽到。"
+          COLOR=16776960 # Yellow
+          TAG=""
+        elif grep -q -E "失效|not logged in|-100" genshin.log; then
+          DESC="[自動簽到] 登入狀態失效，請重新設定 Cookie。"
+          COLOR=16711680 # Red
+          TAG="<@${DISCORD_USER_ID}>"
+        elif grep -q -E "OK|Sign-in successful|success" genshin.log; then
+          DESC="[自動簽到] 原神今日簽到成功。"
+          COLOR=5793266 # Discord Blue
+          TAG=""
+        else
+          DESC="[自動簽到] 未知狀態，請前往 GitHub Actions 檢查詳細日誌。"
+          COLOR=8421504 # Gray
+          TAG="<@${DISCORD_USER_ID}>"
+        fi
+        
+        # Generate JSON payload using Embeds with Raw Logs
         jq -n \
-          --arg msg "${TAG}Genshin Sign-In Report" \
-          --arg status "$STATUS" \
-          --arg time "$CURRENT_TIME" \
+          --arg tag "$TAG" \
+          --arg desc "$DESC" \
           --arg logs "$LOG_TEXT" \
-          '{content: ($msg + "\n**Status**: " + $status + "\n**Time**: " + $time + "\n**Logs**:\n```text\n" + $logs + "\n```")}' > payload.json
+          --arg color "$COLOR" \
+          '{
+            username: "簽到小幫手",
+            content: $tag,
+            embeds: [{
+              description: ($desc + "\n\n**Raw Logs:**\n```text\n" + $logs + "\n```"),
+              color: ($color | tonumber)
+            }]
+          }' > payload.json
           
+        # Send to Discord Webhook
         curl -H "Content-Type: application/json" -d @payload.json $DISCORD_WEBHOOK
