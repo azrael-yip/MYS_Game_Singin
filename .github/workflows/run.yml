@@ -27,33 +27,31 @@ jobs:
         GENSHIN_TOKENS: ${{ secrets.GENSHIN_TOKENS }}
         STARRAIL_TOKENS: ${{ secrets.STARRAIL_TOKENS }}
         DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        DISCORD_USER_ID: "571659139596419122"
       run: |
-        # 1. 執行腳本並將輸出存入 log.txt
         node main.js > log.txt 2>&1
         
-        # 2. 在 GitHub Actions 介面顯示日誌
-        cat log.txt
+        awk '/\[Genshin\] Start/,/\[Genshin\] Sign-in completed/' log.txt > genshin.log
         
-        # 3. 取得當前時間 (UTC+8)
         CURRENT_TIME=$(TZ='Asia/Hong_Kong' date '+%Y-%m-%d %H:%M:%S')
         
-        # 4. 判斷日誌中是否包含失敗或失效的關鍵字
-        if grep -q -E "失效|failed|not logged in|-100" log.txt; then
-          STATUS="❌ 失敗 (請檢查 Cookie 狀態)"
+        if grep -q -E "失效|failed|not logged in|-100" genshin.log; then
+          STATUS="❌ Login Status Lost (Cookie Expired)"
+        elif grep -q -E "已经签到|already|-5003" genshin.log; then
+          STATUS="⚠️ Already Signed In"
+        elif grep -q -E "OK|Sign-in successful|success" genshin.log; then
+          STATUS="✅ Sign-in Successful"
         else
-          STATUS="✅ 成功"
+          STATUS="❓ Unknown Status"
         fi
         
-        # 5. 擷取日誌內容 (限制 1500 字元避免超出 Discord 限制)
-        LOG_TEXT=$(head -c 1500 log.txt)
+        LOG_TEXT=$(cat genshin.log)
         
-        # 6. 使用 jq 封裝 JSON，避免日誌中的雙引號破壞 JSON 結構
         jq -n \
-          --arg msg "@lazycat7179 MYS_Game_Singin" \
+          --arg msg "<@${DISCORD_USER_ID}> Genshin Sign-In Report" \
           --arg status "$STATUS" \
           --arg time "$CURRENT_TIME" \
           --arg logs "$LOG_TEXT" \
-          '{content: ($msg + "\n**狀態**: " + $status + "\n**時間**: " + $time + "\n**詳細日誌**:\n```text\n" + $logs + "\n```")}' > payload.json
+          '{content: ($msg + "\n**Status**: " + $status + "\n**Time**: " + $time + "\n**Logs**:\n```text\n" + $logs + "\n```")}' > payload.json
           
-        # 7. 透過 Webhook 傳送至 Discord
         curl -H "Content-Type: application/json" -d @payload.json $DISCORD_WEBHOOK
