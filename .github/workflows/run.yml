@@ -2,8 +2,8 @@ name: MiHoYo Sign-In Script
 
 on:
   schedule:
-    - cron: '0 18 * * *' # UTC 18:00, UTC+8 02:00
-  workflow_dispatch: # Manual trigger
+    - cron: '0 18 * * *'
+  workflow_dispatch:
 
 jobs:
   build-and-run:
@@ -27,3 +27,23 @@ jobs:
         GENSHIN_TOKENS: ${{ secrets.GENSHIN_TOKENS }}
         STARRAIL_TOKENS: ${{ secrets.STARRAIL_TOKENS }}
       run: node main.js
+
+    - name: Discord Notification (Success)
+      if: success()
+      env:
+        DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+      run: |
+        CURRENT_TIME=$(TZ='Asia/Hong_Kong' date '+%Y-%m-%d %H:%M:%S')
+        curl -H "Content-Type: application/json" \
+        -d "{\"content\": \"<@YOUR_USER_ID> ✅ MYS_Game_Singin \n**Status**: Success\n**Time**: $CURRENT_TIME\nCheck GitHub Actions logs for details.\"}" \
+        $DISCORD_WEBHOOK
+
+    - name: Discord Notification (Failure)
+      if: failure()
+      env:
+        DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+      run: |
+        CURRENT_TIME=$(TZ='Asia/Hong_Kong' date '+%Y-%m-%d %H:%M:%S')
+        curl -H "Content-Type: application/json" \
+        -d "{\"content\": \"<@lazycat7179> ❌ MYS_Game_Singin \n**Status**: Failure (Crash/Error)\n**Time**: $CURRENT_TIME\nPlease check GitHub Actions logs.\"}" \
+        $DISCORD_WEBHOOK
