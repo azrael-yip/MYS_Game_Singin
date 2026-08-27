@@ -49,7 +49,7 @@ jobs:
         
         # 6. 使用 jq 封裝 JSON，避免日誌中的雙引號破壞 JSON 結構
         jq -n \
-          --arg msg "<@lazycat7179> MYS_Game_Singin" \
+          --arg msg "@lazycat7179 MYS_Game_Singin" \
           --arg status "$STATUS" \
           --arg time "$CURRENT_TIME" \
           --arg logs "$LOG_TEXT" \
