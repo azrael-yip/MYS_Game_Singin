@@ -35,20 +35,24 @@ jobs:
         
         CURRENT_TIME=$(TZ='Asia/Hong_Kong' date '+%Y-%m-%d %H:%M:%S')
         
-        if grep -q -E "失效|failed|not logged in|-100" genshin.log; then
-          STATUS="❌ Login Status Lost (Cookie Expired)"
-        elif grep -q -E "已经签到|already|-5003" genshin.log; then
+        if grep -q -E "已签到|already|-5003" genshin.log; then
           STATUS="⚠️ Already Signed In"
+          TAG=""
+        elif grep -q -E "失效|not logged in|-100" genshin.log; then
+          STATUS="❌ Login Status Lost (Cookie Expired)"
+          TAG="<@${DISCORD_USER_ID}> "
         elif grep -q -E "OK|Sign-in successful|success" genshin.log; then
           STATUS="✅ Sign-in Successful"
+          TAG=""
         else
           STATUS="❓ Unknown Status"
+          TAG="<@${DISCORD_USER_ID}> "
         fi
         
         LOG_TEXT=$(cat genshin.log)
         
         jq -n \
-          --arg msg "<@${DISCORD_USER_ID}> Genshin Sign-In Report" \
+          --arg msg "${TAG}Genshin Sign-In Report" \
           --arg status "$STATUS" \
           --arg time "$CURRENT_TIME" \
           --arg logs "$LOG_TEXT" \
