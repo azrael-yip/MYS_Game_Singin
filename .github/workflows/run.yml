@@ -39,7 +39,7 @@ jobs:
         if grep -q -E "已签到|already|-5003" genshin.log; then
           DESC="[自動簽到] 原神今日已完成簽到。"
           COLOR=16776960 # Yellow
-          TAG=""
+          TAG="<@${DISCORD_USER_ID}>"
         elif grep -q -E "失效|not logged in|-100" genshin.log; then
           DESC="[自動簽到] 登入狀態失效，請重新設定 Cookie。"
           COLOR=16711680 # Red
