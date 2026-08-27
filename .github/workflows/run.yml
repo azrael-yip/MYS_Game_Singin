@@ -35,7 +35,7 @@ jobs:
       run: |
         CURRENT_TIME=$(TZ='Asia/Hong_Kong' date '+%Y-%m-%d %H:%M:%S')
         curl -H "Content-Type: application/json" \
-        -d "{\"content\": \"<@YOUR_USER_ID> ✅ MYS_Game_Singin \n**Status**: Success\n**Time**: $CURRENT_TIME\nCheck GitHub Actions logs for details.\"}" \
+        -d "{\"content\": \"<@lazycat7179> ✅ MYS_Game_Singin \n**Status**: Success\n**Time**: $CURRENT_TIME\nCheck GitHub Actions logs for details.\"}" \
         $DISCORD_WEBHOOK
 
     - name: Discord Notification (Failure)
