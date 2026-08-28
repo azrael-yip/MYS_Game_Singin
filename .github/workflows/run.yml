@@ -47,7 +47,7 @@ jobs:
         elif grep -q -E "OK|Sign-in successful|success" genshin.log; then
           DESC="[自動簽到] 原神今日簽到成功。"
           COLOR=5793266 # Discord Blue
-          TAG=""
+          TAG="<@${DISCORD_USER_ID}>"
         else
           DESC="[自動簽到] 未知狀態，請前往 GitHub Actions 檢查詳細日誌。"
           COLOR=8421504 # Gray
