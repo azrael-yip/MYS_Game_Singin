@@ -35,6 +35,12 @@ jobs:
         awk '/\[Genshin\] Start/,/\[Genshin\] Sign-in completed/' log.txt > genshin.log
         LOG_TEXT=$(cat genshin.log)
         
+        # Calculate inactivity days
+        LAST_COMMIT_TS=$(git log -1 --format=%ct)
+        CURRENT_TS=$(date +%s)
+        INACTIVE_DAYS=$(( (CURRENT_TS - LAST_COMMIT_TS) / 86400 ))
+        INACTIVE_WARNING="⚠️ **Inactivity Alert**: No commit for $INACTIVE_DAYS days (Cron pauses at 60 days)."
+        
         # Determine status, embed color, and mention tag
         if grep -q -E "已签到|already|-5003" genshin.log; then
           DESC="[自動簽到] 原神今日已完成簽到。"
@@ -47,24 +53,25 @@ jobs:
         elif grep -q -E "OK|Sign-in successful|success" genshin.log; then
           DESC="[自動簽到] 原神今日簽到成功。"
           COLOR=5793266 # Discord Blue
-          TAG="<@${DISCORD_USER_ID}>"
+          TAG=""
         else
           DESC="[自動簽到] 未知狀態，請前往 GitHub Actions 檢查詳細日誌。"
           COLOR=8421504 # Gray
           TAG="<@${DISCORD_USER_ID}>"
         fi
         
-        # Generate JSON payload using Embeds with Raw Logs
+        # Generate JSON payload using Embeds with Raw Logs and Inactivity Warning
         jq -n \
           --arg tag "$TAG" \
           --arg desc "$DESC" \
+          --arg inactive "$INACTIVE_WARNING" \
           --arg logs "$LOG_TEXT" \
           --arg color "$COLOR" \
           '{
             username: "簽到小幫手",
             content: $tag,
             embeds: [{
-              description: ($desc + "\n\n**Raw Logs:**\n```text\n" + $logs + "\n```"),
+              description: ($desc + "\n\n" + $inactive + "\n\n**Raw Logs:**\n```text\n" + $logs + "\n```"),
               color: ($color | tonumber)
             }]
           }' > payload.json
